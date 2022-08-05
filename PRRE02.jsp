@@ -11,13 +11,62 @@
 
 #GridDiv2 {
 	width: 65%;
+	height: 25px;
+	float: left;
+}
+
+#BodyDiv2{
+	width: 65%;
+	height: 25px;
 	float: left;
 }
 
 #GridDiv3 {
 	width: 30%;
+	height: 25px;
 	float: right;
 }
+
+#BodyDiv3 {
+	width: 30%;
+	height: 25px;
+	float: right;
+}
+
+/* 2-2) 예약가능정보 */
+#gbox_gridlist{
+	width: 65%;
+	border: none;
+	position: 'absolute';
+ 	float: left; 
+}
+
+#gbox_gridlist2{
+	width: 30%;
+	border: none;
+	position: 'absolute';
+	float: right;'
+	
+}
+
+/* [2] 버튼 조정 */
+#delBtn, #addBtn, #downBtn, #delBtn2, #addBtn2 {
+	margin-left: 10px;
+	height: 25px;
+	width: auto;
+	border-radius: 0px;
+	float: right !important;
+}
+
+#listBtn, #saveBtn, #reqBtn, #appBtn, #comBtn {
+	margin-left: 10px;
+	height: 25px;
+	width: auto;
+	border-radius: 0px;
+	float: right !important;
+}
+
+            		
 
 </style>
  
@@ -32,6 +81,166 @@
 	  } );
   
   
+$(document).ready(function() {
+	  
+	/* ****************
+	Grid 2-1: 예약가능정보
+	***************** */
+      jQuery("#gridlist").jqGrid({
+    	  url : '/ed/restSearch2',
+          datatype : 'json',
+          mtype : 'POST',
+          colNames : ["No.", '예약가능시간', '예약가능인원', '예약금발생여부', '예약금', '최대이용시간', '비고'],
+          colModel : [
+        	  		//No.
+                      {name:'rnum', index:'rnum', width:20, editrules:{ edithidden:true },
+                          editable : false,
+                          search: false },
+                    //예약가능시간
+                      {name : 'bizrgNo', index : 'bizrgNo', width : 50, editrules : {required : true, edithidden : true},
+                          editable : true,editoptions : {size : "150",maxlength : "50"}},
+                       //예약가능인원
+                        {name : 'loc',index : 'loc', width : 50,editrules : {required : true,edithidden : true},
+                          	editable : true,editoptions : {size : "50",maxlength : "50"},
+                          	search: false
+                        },
+                        //예약금발생여부
+                          {name : 'bizTypeCd',index : 'bizTypeCd', align:"center",width : 50,editrules : {required : true,edithidden : true},
+                          editable : true,editoptions : {size : "50",maxlength : "50"},
+                          search: false,
+                          align: 'center'},
+                      	//예약금
+                          {name : 'restNm',index : 'restNm', width : 50,editrules : {required : true,edithidden : true},
+                          editable : true,editoptions : {size : "150",maxlength : "50"},
+                          search: false},
+                        //최대이용시간
+                      	{name : 'ownerId',index : 'ownerId',width : 50, editrules : {required : true,edithidden : true},
+                          editable : true,editoptions : {size : "150",maxlength : "50"},
+                          search: false,
+                          align: 'center'
+                      },
+                      	//비고
+                      {name : 'rsvStrtDay',index : 'rsvStrtDay', align:"center",width : 80,editrules : {required : false,edithidden : true},
+                          editable : false,editoptions : {size : "50",maxlength : "50"},
+                          search: false,
+                          }
+                      ],
+                      multiselect:true, //체크박스
+          pager : jQuery('#gridpager'),
+          pagination : true,
+//        rowNum : 10,
+//        rowList : [ 3, 6, 9 ],
+          sortname : 'id',
+          viewrecords : true,
+          sortorder : "desc",
+          caption : "예약 가능 정보",
+          autowidth : true,
+          height : '100%',
+          jsonReader: {
+              repeatitems: false
+          },
+          ondblClickRow : function(id) {
+              alert("You double click row with id: "+ id);
+          }
+      	}
+      );
+
+      jQuery("#gridlist").jqGrid({
+          pager : '#gridpager',
+          recordtext : "View {0} - {1} of {2}",
+          emptyrecords : "No records to view",
+          loadtext : "Loading...",
+          pgtext : "Page {0} of {1}"
+      });
+
+      var $grid = $('#gridlist');
+
+      	/* ****************
+  		Grid 2-2: 휴무정보
+  		***************** */
+        jQuery("#gridlist2").jqGrid({
+      	  url : '/ed/restSearch2',
+            datatype : 'json',
+            mtype : 'POST',
+            colNames : ["No.", '휴무정보'],
+            colModel : [            	
+          	  		//No.
+                        {name:'rnum', index:'rnum', width:20, editrules:{ edithidden:true },
+                            editable : false,
+                            search: false },
+                      //예약가능시간
+                        {name : 'bizrgNo', index : 'bizrgNo', width : 50, editrules : {required : true, edithidden : true},
+                            editable : true,editoptions : {size : "150",maxlength : "50"}},
+                        ],
+                        multiselect:true, //체크박스
+            pager : jQuery('#gridpager2'),
+            pagination : true,
+//          rowNum : 10,
+//          rowList : [ 3, 6, 9 ],
+            sortname : 'id',
+            viewrecords : true,
+            sortorder : "desc",
+            caption : "휴무 정보",
+            autowidth : true,
+            height : '100%',
+            jsonReader: {
+                repeatitems: false
+            },
+            ondblClickRow : function(id) {
+                alert("You double click row with id: "+ id);
+            }
+        	}
+        );
+
+        jQuery("#gridlist2").jqGrid({
+            pager : '#gridpager2',
+            recordtext : "View {0} - {1} of {2}",
+            emptyrecords : "No records to view",
+            loadtext : "Loading...",
+            pgtext : "Page {0} of {1}"
+        });
+
+        var $grid2 = $('#gridlist2');
+      // create the grid
+      $grid2.jqGrid({
+          // jqGrid opetions
+      });
+      
+      
+      
+      // set searching deafauls
+      $.extend($.jgrid.search, {multipleSearch: true, multipleGroup: false, closeAfterSearch: true, overlay: 0});
+
+      // during creating nevigator bar (optional) one don't need include searching button
+      $grid.jqGrid('navGrid', '#pager', {add: false, edit: false, del: false, search: false});
+
+      // create the searching dialog
+      //$grid.jqGrid('searchGrid');
+
+      var gridSelector = $.jgrid.jqID($grid[0].id), // 'list'
+          $searchDialog = $("#searchmodfbox_" + gridSelector),
+          $gbox = $("#gbox_" + gridSelector);
+
+      // hide 'close' button of the searchring dialog
+      $searchDialog.find("a.ui-jqdialog-titlebar-close").hide();
+
+      // place the searching dialog above the grid
+      $searchDialog.insertBefore($gbox);
+      $searchDialog.css({position: "relative", zIndex: "auto", float: "left"})
+      $gbox.css({clear:"left"});
+      
+
+
+	/* ****************
+		날짜선택 달력 
+	***************** */
+      $( function() {
+    	  $( "#start" ).datepicker();
+    	  } );
+      $( function() {
+    	  $( "#end" ).datepicker();
+    	  } );
+  });
   </script>
 
 
@@ -62,7 +271,7 @@
   
 			
 			
-			
+<!--  [1] 음식점정보 -->
 <section class="detail-form"><form><div class="detail-wrap"><div class="col-lg-12">                          
               <label class="gridLabel">음식점정보</label>
 			<div id="frm">
@@ -135,11 +344,7 @@
 							    <tr>						      	
 							      <th scope="row"></th>
 							      	<td></td>
-							    </tr>
-							    
-							    
-							  
-						
+							    </tr>			
 							  </tbody>
 							</table>
 						</div>    <!--firm div -->
@@ -150,11 +355,65 @@
 			
   <br>
   
-  <!-- 예약가능정보 -->
+  <!-- [2] 예약가능정보, 휴무정보 -->
 
+<!-- <section class="detail-form"><form><div class="detail-wrap">  -->
+  <div class="col-lg-12">                          
+
+	<div id="GridDiv2"> <label class="gridLabel">예약가능정보</label></div>
+	<div id="GridDiv3"> <label class="gridLabel">휴무정보</label></div>   
+	
+	<div id="frm">
+	<table style="margin-left: auto; margin-right: auto;">
+	<tbody>
+	
+<!-- 	[2-1] 예약가능정보  -->
+	<div id="BodyDiv2">
+			<div class="LblockMarkupCode">
+				<!-- 버튼 -->
+				<div class="GridListButton">
+					<button type="button" id="downBtn" >엑셀다운로드</button>
+           	 		<button type="button" id="delBtn" >- 행삭제</button>
+            		<button type="button" id="addBtn" >+ 행추가</button>				        
+				</div>
+							
+			</div>
+	</div>	
+	
+<!-- 	[2-2] 휴무정보  -->
+	<div id="BodyDiv3">
+			<div class="LblockMarkupCode">
+				<!-- 버튼 -->
+				<div class="GridListButton">
+           	 		<button type="button" id="delBtn2" >- 행삭제</button>
+            		<button type="button" id="addBtn2" >+ 행추가</button>				        
+				</div>			
+			</div>
+	</div>
+	
+	<!-- grid: 예약가능정보 -->
+				<div class="container">
+					<div class="data-table-wrap">
+						<table id="gridlist"></table>
+						<div id="gridpager"></div>
+						
+						<table id="gridlist2"></table>
+						<div id="gridpager2"></div>
+						
+					</div>
+			    </div>
+			    
+			 
+			    
+	</tbody></table></div>
+
+							                
+  </div>
+<!--   </div></form></section> -->
   
-  <!-- 음식점설명 및 결재정보 -->
-  <section class="detail-form"><form><div class="detail-wrap"><div class="col-lg-12">                          
+  <!-- [3] 음식점설명 및 결재정보 -->
+  <section class="detail-form"><form><div class="detail-wrap">
+  <div class="col-lg-12">                          
 	<label class="gridLabel">음식점설명 및 결재정보</label>
               <div id="frm"><table height="300" class="infoTable" style="margin-left: auto; margin-right: auto;"><tbody>						
               		<tr>
@@ -169,10 +428,26 @@
 							      <th scope="row" class="commonList">결재의견</th>
 							      	<td><input type="text" class="form-control" id="searchValue" name="searchValue" value="" style="width:500px; height:80px"></td>							                         
 					</tr>
-				</tbody></table></div>
+					
+					
+				</tbody>
+				
+				</table>
+				
+				</div>
+				<div class="LblockMarkupCode">
+				<!-- 버튼 -->
+				<div class="GridListButton">
+					<button type="button" id="comBtn">반려</button>	
+           	 		<button type="button" id="appBtn">승인</button>
+            		<button type="button" id="reqBtn">결재요청</button>
+            		<button type="button" id="saveBtn">저장</button>
+            		<button type="button" id="listBtn">목록</button>				        
+				</div>			
+				</div>
 							                
-  </div></div></form></section>
-  
+  </div>
+  </div></form></section>
   
 
   <section class="section sub-contents">
