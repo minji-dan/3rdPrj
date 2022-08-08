@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="kr.co.biztechpartners.serveSocket.ed.repository.EdMapper">
+
+	<resultMap type="RestMstDto" id="RestMstDtoMap">
+		<id column="rest_id" property="restId"/>
+		<result column="bizrg_no" property="bizrgNo"/>
+		<result column="rest_nm" property="restNm"/>
+		<result column="rest_desc" property="restDesc"/>
+		<result column="rest_rmk" property="restRmk"/>
+		<result column="phn_no" property="phn_no"/>
+		<result column="addr" property="addr"/>
+		<result column="loc" property="loc"/>
+		<result column="sales_hour" property="salesHour"/>
+		<result column="rsv_strt_day" property="rsvStrtDay"/>
+		<result column="rsv_end_day" property="rsvEndDay"/>
+		<result column="biz_type_cd" property="bizTypeCd"/>
+		<result column="enable_per" property="enablePer"/>
+		<result column="owner_id" property="ownerId"/>
+		<result column="resr_mgr_id" property="resr_mgr_id"/>
+		<result column="appr_stat_cd" property="apprStatCd"/>
+		<result column="appr_usr_id" property="apprUsrId"/>
+		<result column="appr_comment" property="apprComment"/>
+		<result column="crt_id" property="crtId"/>
+		<result column="crt_dt" property="crtDt"/>
+		<result column="updt_id" property="updtId"/>
+		<result column="updt_dt" property="updtDt"/>
+		<result column="attr1" property="attr1"/>
+		<association property="user" javaType="UserVO" resultMap="kr.co.biztechpartners.serveSocket.user.repository.UserMapper.UserVOMap"></association>
+		<!-- <association property="avainfo" javaType="AvaInfoDto" resultMap="kr.co.biztechpartners.serveSocket.ed.repository.edMapper.AvaInfoDtoMap"></association> -->
+	</resultMap>
+	
+	<!-- 총 페이지수 -->
+	<select id="totalCount" resultType="int" parameterType="int">
+		select	round((count(*)/#{rows})+1 
+		from re_rest_mst, tb_user
+		where   re_rest_mst.owner_id = tb_user.id
+	</select>
+	
+	<!-- 총 레코드갯수 -->
+	<select id="selectAlltotalRecords" resultType="int">
+		select	count(*) 
+		from 	re_rest_mst, tb_user
+		where   re_rest_mst.owner_id = tb_user.id
+	</select>
+	
+	<!-- 1. 음식점목록 전체 -->
+	<!-- 0806 gw 수정 -->
+	<!-- concat추가,tb_user와 join  -->
+	<!-- 0808 gw 수정  paging 처리 추가
+	row_number() over() -->
+	<select id="selectAllRest" resultType="RestMstDtoExt" parameterType="map">
+	/*kr.co.biztechpartners.serveSocket.ed.repository.EdMapper.selectAllRest*/	
+		select	restmst.rn as rnum,
+				restmst.bizrg_no,
+				restmst.loc,
+				restmst.biz_type_cd,
+				restmst.rest_nm,
+				tb_user.u_name as attr1,
+				concat(restmst.rsv_strt_day," ~ ",restmst.rsv_end_day) as rsvStrtDay,
+				restmst.appr_stat_cd
+		from	(
+				<!--페이징 처리 -->
+				select *, row_number() over() as rn
+				from re_rest_mst
+				) as restmst,
+				tb_user
+		where   restmst.owner_id = tb_user.id
+		and 	restmst.rn BETWEEN #{start} AND #{limit}+1
+		order by rnum
+	</select>
+	
+	
+	<!-- 음식점목록 검색 -->
+	<!-- 0806 gw 추가 -->
+	<select id="searchRest" parameterType="HashMap" resultType="RestMstDtoExt">
+	/*kr.co.biztechpartners.serveSocket.ed.repository.EdMapper.selectAllRest*/
+		select	@ROWNUM := @ROWNUM + 1 AS RNUM,
+				re_rest_mst.bizrg_no,
+				re_rest_mst.loc,
+				re_rest_mst.biz_type_cd,
+				re_rest_mst.rest_nm,
+				tb_user.u_name as attr1,
+				concat(re_rest_mst.rsv_strt_day," ~ ",re_rest_mst.rsv_end_day) as rsvStrtDay,
+				re_rest_mst.appr_stat_cd
+		from	re_rest_mst,
+				tb_user,
+				(SELECT @ROWNUM:=0) AS R
+		where   re_rest_mst.owner_id = tb_user.id
+		<if test="bizrgNo != null and !bizrgNo.equals('')">
+		and		re_rest_mst.bizrg_no = #{bizrgNo}
+		</if>
+		<if test="loc != null">
+		and		re_rest_mst.loc = #{loc}
+		</if>
+		<if test="bizTypeCd != null">
+		and		re_rest_mst.biz_type_cd = #{bizTypeCd}
+		</if>
+		<if test="restNm != null and !restNm.equals('')">
+		and		re_rest_mst.rest_nm like concat('%',#{restNm},'%')
+		</if>
+		<if test="coName != null and !coName.equals('')">
+		and		tb_user.u_name like concat('%',#{coName},'%')
+		</if>
+		<if test="rsvStrtDay != null">
+		and		re_rest_mst.rsv_strt_day &gt;= ${rsvStrtDay} 
+		</if>
+		<if test="rsvEndDay != null">
+		and		re_rest_mst.rsv_end_day &lt;= ${rsvEndDay}
+		</if>
+		<if test="apprStatCd != null">
+		and		re_rest_mst.appr_stat_cd = #{apprStatCd}
+		</if>
+		
+	</select>
+	
+	<!-- 예약가능음식점 조회 -->
+	<!-- 0807 gw 추가 -->
+	<!-- rezDt 생각이 좀 더필요 -->
+	<select id="searchAvaInfo" parameterType="HashMap" resultType="RestMstDtoExt">
+	/*kr.co.biztechpartners.serveSocket.ed.repository.EdMapper.selectAllRest*/
+		select	@ROWNUM := @ROWNUM + 1 AS RNUM,
+				re_rest_mst.loc,
+				re_rest_mst.biz_type_cd,
+				re_rest_mst.rest_nm,
+				re_rest_mst.sales_hour,
+				re_ava_info.rez_time_cd as attr1,
+				re_ava_info.rez_pos_cnt as attr2,
+				re_ava_info.rez_pay_yn as attr3,
+				re_ava_info.rez_pay as attr4,
+				re_ava_info.max_ava_tm as attr5,
+				re_rest_mst.rest_desc,
+				re_rest_mst.rest_rmk,
+				re_ava_info.rez_rmk as attr6
+		from	re_rest_mst,
+				re_ava_info,
+				(SELECT @ROWNUM:=0) AS R
+		where   re_rest_mst.rest_id = re_ava_info.rest_id
+		<if test="loc != null">
+		and		re_rest_mst.loc = #{loc}
+		</if>
+		<if test="bizTypeCd != null">
+		and		re_rest_mst.bizTypeCd = #{bizTypeCd}
+		</if>
+		<if test="restNm != null and !restNm.equals('')">
+		and		re_rest_mst.rest_nm like concat('%',#{restNm},'%')
+		</if>
+		<if test="rezDt != null">
+		and		re_rest_mst.rsv_strt_day &lt;= ${rezDt} 
+		and		re_rest_mst.rsv_end_day &gt;= ${rezDt}
+		</if>
+		<if test="rezTimeCD != null">
+		and		re_ava_info.rez_time_cd =  #{rezTimeCD}
+		</if>
+		<if test="rezPosCNT != null and !rezPosCNT.equals('') ">
+		and		re_ava_info.rez_pos_cnt &gt;= ${rsvEndDay}
+		</if>
+		<if test="rezPay != null">
+		and		re_ava_info.rez_pay_yn = #{rezPay}
+		</if>
+		
+	</select>
+	
+</mapper>
