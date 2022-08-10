@@ -30,44 +30,110 @@
 		<!-- <association property="avainfo" javaType="AvaInfoDto" resultMap="kr.co.biztechpartners.serveSocket.ed.repository.edMapper.AvaInfoDtoMap"></association> -->
 	</resultMap>
 	
-	<!-- 총 페이지수 -->
-	<select id="totalCount" resultType="int" parameterType="int">
-		select	round((count(*)/#{rows})+1 
-		from re_rest_mst, tb_user
-		where   re_rest_mst.owner_id = tb_user.id
-	</select>
+	<!-- 예약신청내역 전체 -->
+	<!-- 0809 mji 수정 -->
+	<!-- 	No. 예약상태 지역 업종 음식점명 / 예약일자 예약시간 예약인원 / 예약자 취소 -->
+	<resultMap type="RezMstDto" id="RezMstDtoMap">
+		<id column="rez_no" property="rezNo"/>
+		<id column="rest_id" property="restId"/>
+		<id column="rez_info_seq" property="rezInfoSeq"/>
+		<result column="rez_usr_id" property="rezUsrId"/>
+		<result column="rez_dt" property="rezDt"/>
+		<result column="rez_time_cd" property="rezTimeCd"/>
+		<result column="rez_cnt" property="rezCnt"/>
+		<result column="rez_stat_cd" property="rezStatCd"/>
+		<result column="rez_cncl_rmk" property="rezCnclRmk"/>
+		<result column="rez_appr_user_id" property="rezApprUserId"/>
+		<result column="rez_appr_comment" property="rezApprComment"/>
+		<result column="crt_id" property="crtId"/>
+		<result column="crt_dt" property="crtDt"/>
+		<result column="updt_id" property="updtId"/>
+		<result column="updt_dt" property="updtDt"/>
+		<result column="attr1" property="attr1"/>
+		<association property="user" javaType="UserVO" resultMap="kr.co.biztechpartners.serveSocket.user.repository.UserMapper.UserVOMap"></association>
+		<!-- <association property="avainfo" javaType="AvaInfoDto" resultMap="kr.co.biztechpartners.serveSocket.ed.repository.edMapper.AvaInfoDtoMap"></association> -->
+	</resultMap>
 	
-	<!-- 총 레코드갯수 -->
+	<!-- 총 레코드갯수(리스트) -->
 	<select id="selectAlltotalRecords" resultType="int">
 		select	count(*) 
-		from 	re_rest_mst, tb_user
-		where   re_rest_mst.owner_id = tb_user.id
+		from 	re_rest_mst as restmst
+				left join tb_user on restmst.owner_id = tb_user.id
+				left join cm_code code1 on restmst.loc = code1.cd and code1.grp_cd = 'biz_loc'
+				left join cm_code code2 on restmst.biz_type_cd =code2.cd and code2.grp_cd = 'biz_type_cd'
+				left join cm_code code3 on restmst.appr_stat_cd = code3.cd and code3.grp_cd = 'appr_stat'
+		where   restmst.owner_id = tb_user.id
 	</select>
 	
-	<!-- 1. 음식점목록 전체 -->
+	
+	<!-- 총 레코드갯수(검색) -->
+	<select id="selectSearchtotalRecords" resultType="int" parameterType="map">
+		select	count(*) 
+		from 	re_rest_mst as restmst
+				left join cm_code code1 on restmst.loc = code1.cd and code1.grp_cd = 'BIZ_LOC'
+				left join cm_code code2 on restmst.biz_type_cd =code2.cd and code2.grp_cd = 'BIZ_TYPE_CD'
+				left join cm_code code3 on restmst.appr_stat_cd = code3.cd and code3.grp_cd = 'APPR_STAT'
+				left join tb_user user on restmst.owner_id = user.id
+		where   1=1 
+		<if test="bizrgNo != null and !bizrgNo.equals('')">
+		and		restmst.bizrg_no = #{bizrgNo}
+		</if>
+		<if test="loc != null and !loc.equals('')">
+		and		code1.cd = #{loc}
+		</if>
+		<if test="bizTypeCd != null and !bizTypeCd.equals('')">
+		and		code2.cd = #{bizTypeCd}
+		</if>
+		<if test="restNm != null and !restNm.equals('')">
+		and		restmst.rest_nm like concat('%',#{restNm},'%')
+		</if>
+		<if test="coName != null and !coName.equals('')">
+		and		user.u_name like concat('%',#{coName},'%')
+		</if>
+		<if test="rsvStrtDay != null">
+		and		restmst.rsv_strt_day &gt;= ${rsvStrtDay} 
+		</if>
+		<if test="rsvEndDay != null">
+		and		restmst.rsv_end_day &lt;= ${rsvEndDay}
+		</if>
+		<if test="apprStatCd != null and !apprStatCd.equals('')">
+		and		code3.cd = #{apprStatCd}
+		</if>
+	</select>
+	
+	<!-- 신규 음식점 ID 자동채번 -->
+	<!--  0809 gw 추가 -->
+	<select id="autoRestId" resultType="int">
+		select MAX(REST_ID)+1 
+		from re_rest_mst
+	</select>
+	
+	
+	<!-- 음식점목록 전체 -->
 	<!-- 0806 gw 수정 -->
 	<!-- concat추가,tb_user와 join  -->
 	<!-- 0808 gw 수정  paging 처리 추가
 	row_number() over() -->
 	<select id="selectAllRest" resultType="RestMstDtoExt" parameterType="map">
 	/*kr.co.biztechpartners.serveSocket.ed.repository.EdMapper.selectAllRest*/	
-		select	restmst.rn as rnum,
-				restmst.bizrg_no,
-				restmst.loc,
-				restmst.biz_type_cd,
-				restmst.rest_nm,
-				tb_user.u_name as attr1,
-				concat(restmst.rsv_strt_day," ~ ",restmst.rsv_end_day) as rsvStrtDay,
-				restmst.appr_stat_cd
-		from	(
-				<!--페이징 처리 -->
-				select *, row_number() over() as rn
-				from re_rest_mst
-				) as restmst,
-				tb_user
-		where   restmst.owner_id = tb_user.id
-		and 	restmst.rn BETWEEN #{start} AND #{limit}+1
-		order by rnum
+		select *
+		from 	(select	row_number() over(order by loc, bizTypeCd) as rnum,
+						restmst.rest_id as restId,
+						restmst.bizrg_no as bizrgNo,
+						code1.cd_nm as loc,
+						code2.cd_nm as bizTypeCd,
+						restmst.rest_nm as restNm,
+						user.u_name as attr1,
+						concat(restmst.rsv_strt_day," ~ ",restmst.rsv_end_day) as rsvStrtDay,
+						code3.cd_nm as apprStatCd
+				from	re_rest_mst as restmst
+						left join cm_code code1 on restmst.loc = code1.cd and code1.grp_cd = 'BIZ_LOC'
+						left join cm_code code2 on restmst.biz_type_cd =code2.cd and code2.grp_cd = 'BIZ_TYPE_CD'
+						left join cm_code code3 on restmst.appr_stat_cd = code3.cd and code3.grp_cd = 'APPR_STAT'
+						left join tb_user user on restmst.owner_id = user.id
+				where   1=1) as restmst2
+		where 	restmst2.rnum BETWEEN #{start} AND #{limit}
+		
 	</select>
 	
 	
@@ -75,90 +141,260 @@
 	<!-- 0806 gw 추가 -->
 	<select id="searchRest" parameterType="HashMap" resultType="RestMstDtoExt">
 	/*kr.co.biztechpartners.serveSocket.ed.repository.EdMapper.selectAllRest*/
-		select	@ROWNUM := @ROWNUM + 1 AS RNUM,
-				re_rest_mst.bizrg_no,
-				re_rest_mst.loc,
-				re_rest_mst.biz_type_cd,
-				re_rest_mst.rest_nm,
-				tb_user.u_name as attr1,
-				concat(re_rest_mst.rsv_strt_day," ~ ",re_rest_mst.rsv_end_day) as rsvStrtDay,
-				re_rest_mst.appr_stat_cd
-		from	re_rest_mst,
-				tb_user,
-				(SELECT @ROWNUM:=0) AS R
-		where   re_rest_mst.owner_id = tb_user.id
-		<if test="bizrgNo != null and !bizrgNo.equals('')">
-		and		re_rest_mst.bizrg_no = #{bizrgNo}
-		</if>
-		<if test="loc != null">
-		and		re_rest_mst.loc = #{loc}
-		</if>
-		<if test="bizTypeCd != null">
-		and		re_rest_mst.biz_type_cd = #{bizTypeCd}
-		</if>
-		<if test="restNm != null and !restNm.equals('')">
-		and		re_rest_mst.rest_nm like concat('%',#{restNm},'%')
-		</if>
-		<if test="coName != null and !coName.equals('')">
-		and		tb_user.u_name like concat('%',#{coName},'%')
-		</if>
-		<if test="rsvStrtDay != null">
-		and		re_rest_mst.rsv_strt_day &gt;= ${rsvStrtDay} 
-		</if>
-		<if test="rsvEndDay != null">
-		and		re_rest_mst.rsv_end_day &lt;= ${rsvEndDay}
-		</if>
-		<if test="apprStatCd != null">
-		and		re_rest_mst.appr_stat_cd = #{apprStatCd}
-		</if>
+		select *
+		from 	(select	row_number() over(order by loc, bizTypeCd) as rnum,
+						restmst.rest_id as restId,
+						restmst.bizrg_no as bizrgNo,
+						code1.cd_nm as loc,
+						code2.cd_nm as bizTypeCd,
+						restmst.rest_nm as restNm,
+						user.u_name as attr1,
+						concat(restmst.rsv_strt_day," ~ ",restmst.rsv_end_day) as rsvStrtDay,
+						code3.cd_nm as apprStatCd
+				from	re_rest_mst as restmst
+						left join cm_code code1 on restmst.loc = code1.cd and code1.grp_cd = 'BIZ_LOC'
+						left join cm_code code2 on restmst.biz_type_cd =code2.cd and code2.grp_cd = 'BIZ_TYPE_CD'
+						left join cm_code code3 on restmst.appr_stat_cd = code3.cd and code3.grp_cd = 'APPR_STAT'
+						left join tb_user user on restmst.owner_id = user.id
+				where   1=1
+				<if test="bizrgNo != null and !bizrgNo.equals('')">
+				and		restmst.bizrg_no = #{bizrgNo}
+				</if>
+				<if test="loc != null and !loc.equals('')">
+				and		code1.cd = #{loc}
+				</if>
+				<if test="bizTypeCd != null and !bizTypeCd.equals('')">
+				and		code2.cd = #{bizTypeCd}
+				</if>
+				<if test="restNm != null and !restNm.equals('')">
+				and		restmst.rest_nm like concat('%',#{restNm},'%')
+				</if>
+				<if test="coName != null and !coName.equals('')">
+				and		user.u_name like concat('%',#{coName},'%')
+				</if>
+				<if test="rsvStrtDay != null">
+				and		restmst.rsv_strt_day &gt;= ${rsvStrtDay} 
+				</if>
+				<if test="rsvEndDay != null">
+				and		restmst.rsv_end_day &lt;= ${rsvEndDay}
+				</if>
+				<if test="apprStatCd != null and !apprStatCd.equals('')">
+				and		code3.cd = #{apprStatCd}
+				</if>
+		) as restmst2
+		where 	restmst2.rnum BETWEEN #{start} AND #{limit}
+	</select>
+	
+	<!-- 2. 음식점 관리 페이지 상단 mapping용 sql -->
+	<!-- 0808 전근우 추가 -->
+	<select id="restInfo" parameterType="HashMap" resultType="RestMstDtoExt">
+		select	restmst.rest_id as restId,
+				restmst.bizrg_No as bizrgNo,
+				code1.cd_nm as loc,
+				code2.cd_nm as bizTypeCd,
+				restmst.rest_nm as restNm,
+				restmst.phn_no as phnNo,
+				restmst.sales_hour as salesHour,
+				user.u_name as attr1,
+				restmst.rsv_strt_day as rsvStrtDay,
+				restmst.addr as addr,
+				restmst.enable_per as enablePer,
+				restmst.rsv_end_day as rsvEndDay,
+				code3.cd_nm as apprStatCd
+		from	re_rest_mst as restmst
+				left join cm_code code1 on restmst.loc = code1.cd and code1.grp_cd = 'BIZ_LOC'
+				left join cm_code code2 on restmst.biz_type_cd =code2.cd and code2.grp_cd = 'BIZ_TYPE_CD'
+				left join cm_code code3 on restmst.appr_stat_cd = code3.cd and code3.grp_cd = 'APPR_STAT'
+				left join tb_user user on restmst.owner_id = user.id
+		where   1=1
+		and		restmst.rest_Id = #{restId}
 		
 	</select>
 	
-	<!-- 예약가능음식점 조회 -->
+	<!-- 2. 음식점 관리 좌측 그리드 레코드갯수(리스트) -->
+	<!-- 0809 전근우 추가 -->
+	<select id="avaInfototalRecords" parameterType="HashMap" resultType="int">
+		select	count(*) 
+		from 	re_ava_info as avaInfo
+				left join cm_code code1 on avaInfo.rez_time_cd = code1.cd and code1.grp_cd = 'REZ_TIME_CD'
+				left join re_rest_mst as restmst on restmst.rest_id = avaInfo.rest_id
+		where   restmst.rest_Id= #{restId}
+	</select>
+	
+	<!-- 2. 음식점 관리 페이지 왼쪽 그리드 -->
+	<!-- 0809 전근우 추가 -->
+	<select id="avaInfo" parameterType="HashMap" resultType="AvaInfoDtoExt">
+		select *
+		from 	(select	row_number() over(order by rezTimeCd,rezPosCnt) as rnum,
+						code1.cd_nm as rezTimeCd,
+						avaInfo.rez_pos_cnt as rezPosCnt,
+						avaInfo.rez_pay_yn as rezPayYn,
+						avaInfo.rez_pay as rezPay,
+						restmst.rest_nm as restNm,
+						avaInfo.max_ava_tm as maxAvaTm,
+						avaInfo.rez_rmk as rezRmk
+				from	re_ava_info as avaInfo
+						left join cm_code code1 on avaInfo.rez_time_cd = code1.cd and code1.grp_cd = 'REZ_TIME_CD'
+						left join re_rest_mst as restmst on restmst.rest_id = avaInfo.rest_id
+				where   1=1
+				and 	restmst.rest_Nm = #{restNm}) as avaInfo2
+		where 	avaInfo2.rnum BETWEEN #{start} AND #{limit}
+	</select>
+	
+	<!-- 2. 음식점 관리 좌측 그리드 레코드갯수(리스트) -->
+	<!-- 0809 전근우 추가 -->
+	<select id="holydtTotalRecords" parameterType="HashMap" resultType="int">
+		select	count(*) 
+		from 	re_rest_holy_mst as restholymst
+				left join re_rest_mst as restmst on restmst.rest_id = restholymst.rest_id
+		where   restmst.rest_Id = #{restId}
+	</select>
+	
+	<!-- 2. 음식점 관리 페이지 오른쪽 그리드 -->
+	<!-- 0809 전근우 추가 -->
+	<select id="holydt" parameterType="HashMap" resultType="RestHolyMstDtoExt">
+		select *
+		from 	(select	row_number() over() as rnum,
+						restholymst.holy_dt as holyDt
+				from	re_rest_holy_mst as restholymst
+						left join re_rest_mst as restmst on restmst.rest_id = restholymst.rest_id
+				where   1=1
+				and 	restmst.rest_Id = #{restId}) as restholymst2
+		where 	restholymst2.rnum BETWEEN #{start} AND #{limit}
+	</select>
+	<!-- 3. 예약가능음식점 조회 -->
 	<!-- 0807 gw 추가 -->
-	<!-- rezDt 생각이 좀 더필요 -->
+	<!-- 0809 paging처리를 위한 수정 -->
 	<select id="searchAvaInfo" parameterType="HashMap" resultType="RestMstDtoExt">
 	/*kr.co.biztechpartners.serveSocket.ed.repository.EdMapper.selectAllRest*/
-		select	@ROWNUM := @ROWNUM + 1 AS RNUM,
-				re_rest_mst.loc,
-				re_rest_mst.biz_type_cd,
-				re_rest_mst.rest_nm,
-				re_rest_mst.sales_hour,
-				re_ava_info.rez_time_cd as attr1,
-				re_ava_info.rez_pos_cnt as attr2,
-				re_ava_info.rez_pay_yn as attr3,
-				re_ava_info.rez_pay as attr4,
-				re_ava_info.max_ava_tm as attr5,
-				re_rest_mst.rest_desc,
-				re_rest_mst.rest_rmk,
-				re_ava_info.rez_rmk as attr6
-		from	re_rest_mst,
-				re_ava_info,
-				(SELECT @ROWNUM:=0) AS R
-		where   re_rest_mst.rest_id = re_ava_info.rest_id
+		select *
+		from 	(select	row_number() over(order by loc, bizTypeCd) as rnum,
+						code1.cd_nm as loc,
+						code2.cd_nm as bizTypeCd,
+						restmst.rest_nm as restNm,
+						restmst.sales_hour,
+						code4.cd_nm as attr1,
+						avaInfo.rez_pos_cnt as attr2,
+						code5.cd_nm as attr3,
+						avaInfo.rez_pay as attr4,
+						avaInfo.max_ava_tm as attr5,
+						restmst.rest_desc as restDesc,
+						restmst.rest_rmk as restRmk,
+						avaInfo.rez_rmk as attr6
+				from	re_rest_mst as restmst
+						left join re_ava_info avaInfo on avaInfo.rest_id = restmst.rest_id
+						left join cm_code code1 on restmst.loc = code1.cd and code1.grp_cd = 'BIZ_LOC'
+						left join cm_code code2 on restmst.biz_type_cd =code2.cd and code2.grp_cd = 'BIZ_TYPE_CD'
+						left join cm_code code4 on avaInfo.rez_time_cd = code4.cd and code4.grp_cd = 'REZ_TIME_CD'
+						left join cm_code code5 on avaInfo.rez_pay_yn = code5.cd and code5.grp_cd = 'REZ_FEE_YN'
+						left join tb_user user on restmst.owner_id = user.id
+				where   1=1
+				<if test="loc != null">
+				and		restmst.loc = #{loc}
+				</if>
+				<if test="bizTypeCd != null">
+				and		restmst.biz_type_cd = #{bizTypeCd}
+				</if>
+				<if test="restNm != null and !restNm.equals('')">
+				and		restmst.rest_nm like concat('%',#{restNm},'%')
+				</if>
+				<if test="rezDt != null">
+				and		restmst.rsv_strt_day &lt;= ${rezDt} 
+				and		restmst.rsv_end_day &gt;= ${rezDt}
+				</if>
+				<if test="rezTimeCD != null">
+				and		avaInfo.rez_time_cd =  #{rezTimeCD}
+				</if>
+				<if test="rezPosCNT != null and !rezPosCNT.equals('') ">
+				and		avaInfo.rez_pos_cnt &gt;= ${rsvEndDay}
+				</if>
+				<if test="rezPay != null">
+				and		avaInfo.rez_pay_yn = #{rezPay}
+				</if>
+		) as restmst2
+		where 	restmst2.rnum BETWEEN #{start} AND #{limit}
+				
+	</select>
+	
+	<!-- 예약가능검색 레코드갯수 -->
+	<!-- 0809 gw 생성 -->
+	<select id="avaInfoSearchRecords" resultType="int" parameterType="map">
+		select	count(*) 
+		from	re_rest_mst as restmst
+				left join re_ava_info avaInfo on avaInfo.rest_id = restmst.rest_id
+				left join cm_code code1 on restmst.loc = code1.cd and code1.grp_cd = 'BIZ_LOC'
+				left join cm_code code2 on restmst.biz_type_cd =code2.cd and code2.grp_cd = 'BIZ_TYPE_CD'
+				left join cm_code code4 on avaInfo.rez_time_cd = code4.cd and code4.grp_cd = 'REZ_TIME_CD'
+				left join cm_code code5 on avaInfo.rez_pay_yn = code5.cd and code5.grp_cd = 'REZ_FEE_YN'
+				left join tb_user user on restmst.owner_id = user.id
+		where   1=1
 		<if test="loc != null">
-		and		re_rest_mst.loc = #{loc}
+		and		restmst.loc = #{loc}
 		</if>
 		<if test="bizTypeCd != null">
-		and		re_rest_mst.bizTypeCd = #{bizTypeCd}
+		and		restmst.biz_type_cd = #{bizTypeCd}
 		</if>
 		<if test="restNm != null and !restNm.equals('')">
-		and		re_rest_mst.rest_nm like concat('%',#{restNm},'%')
+		and		restmst.rest_nm like concat('%',#{restNm},'%')
 		</if>
 		<if test="rezDt != null">
-		and		re_rest_mst.rsv_strt_day &lt;= ${rezDt} 
-		and		re_rest_mst.rsv_end_day &gt;= ${rezDt}
+		and		restmst.rsv_strt_day &lt;= ${rezDt} 
+		and		restmst.rsv_end_day &gt;= ${rezDt}
 		</if>
 		<if test="rezTimeCD != null">
-		and		re_ava_info.rez_time_cd =  #{rezTimeCD}
+		and		avaInfo.rez_time_cd =  #{rezTimeCD}
 		</if>
 		<if test="rezPosCNT != null and !rezPosCNT.equals('') ">
-		and		re_ava_info.rez_pos_cnt &gt;= ${rsvEndDay}
+		and		avaInfo.rez_pos_cnt &gt;= ${rsvEndDay}
 		</if>
 		<if test="rezPay != null">
-		and		re_ava_info.rez_pay_yn = #{rezPay}
+		and		avaInfo.rez_pay_yn = #{rezPay}
 		</if>
-		
 	</select>
+	
+	<!-- 0809 mji -->
+	<select id="selectAlltotalRecords5" resultType="int">
+		select	count(*) 
+		from 	re_rez_mst as rezmst
+				left join re_rest_mst as restmst on restmst.rest_id=rezmst.rest_id
+				left join cm_code code1 on restmst.loc = code1.cd and code1.grp_cd = 'biz_loc'
+				left join cm_code code2 on restmst.biz_type_cd =code2.cd and code2.grp_cd = 'biz_type_cd'
+				left join cm_code code3 on rezmst.rez_time_cd = code3.cd and code3.grp_cd = 'rez_time_cd'
+		where   restmst.rest_id=rezmst.rest_id
+	</select>
+	
+	<!-- 예약신청내역 전체 -->
+	<!-- 0808 mji 수정 -->
+	<!-- 	No. 예약상태 지역 업종 음식점명 / 예약일자 예약시간 예약인원 / 예약자 취소 -->
+	<!-- 0810 mji 수정: 예약자, 취소 항목 추가 -->
+	<select id="selectAllRez" resultType="RezMstDtoExt" parameterType="map">
+	/*kr.co.biztechpartners.serveSocket.ed.repository.EdMapper.selectAllRez*/	
+		select	rezmst.rn as rnum, <!-- No. -->
+				rezmst.rez_stat_cd as rezStatCd,  <!-- 예약상태 -->
+				code1.cd_nm as attr2,  <!-- 지역 -->
+				code2.cd_nm as attr3,  <!-- 업종 -->			
+				restmst.rest_nm as attr1, <!-- 음식점명 -->				
+				rezmst.rez_dt as rezDt,  <!-- 예약일자 -->
+				code3.cd_nm as attr4, <!-- 예약시간 -->
+				rezmst.rez_cnt as rezCnt, <!-- 예약인원 -->
+				user.u_name as attr5 <!-- 예약자 ID -->			
+		from	(
+				select *, row_number() over() as rn
+				from re_rez_mst
+				) as rezmst
+				left join re_rest_mst as restmst on restmst.rest_id=rezmst.rest_id
+				left join cm_code code1 on restmst.loc = code1.cd and code1.grp_cd = 'BIZ_LOC'
+				left join cm_code code2 on restmst.biz_type_cd =code2.cd and code2.grp_cd = 'BIZ_TYPE_CD'
+				left join cm_code code3 on rezmst.rez_time_cd = code3.cd and code3.grp_cd = 'REZ_TIME_CD'
+				left join tb_user user on rezmst.rez_usr_id = user.id  
+		where   1=1
+		and 	rezmst.rn BETWEEN #{start} AND #{limit}
+		order by rnum
+	</select>
+	
+	<!-- 예약신청내역 페이징 처리-->
+	<!-- 0810 mji 수정 -->
+	
+
 	
 </mapper>
