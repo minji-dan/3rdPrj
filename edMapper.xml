@@ -139,6 +139,7 @@
 	
 	<!-- 음식점목록 검색 -->
 	<!-- 0806 gw 추가 -->
+	<!-- 0810 mji 주석 추가 -->
 	<select id="searchRest" parameterType="HashMap" resultType="RestMstDtoExt">
 	/*kr.co.biztechpartners.serveSocket.ed.repository.EdMapper.selectAllRest*/
 		select *
@@ -157,27 +158,41 @@
 						left join cm_code code3 on restmst.appr_stat_cd = code3.cd and code3.grp_cd = 'APPR_STAT'
 						left join tb_user user on restmst.owner_id = user.id
 				where   1=1
+				<!-- 사업자등록번호 -->
+				<!-- 텍스트박스, ‘–’까지 equal 검색 -->
 				<if test="bizrgNo != null and !bizrgNo.equals('')">
 				and		restmst.bizrg_no = #{bizrgNo}
 				</if>
+				<!-- 지역 -->
+				<!-- 콤보박스, 공통코드 : 업무영역코드 – RE, 그룹코드 – BIZ_LOC -->
 				<if test="loc != null and !loc.equals('')">
 				and		code1.cd = #{loc}
 				</if>
+				<!-- 업종 -->
+				<!-- 콤보박스, 공통코드 : 업무영역코드 – RE, 그룹코드 – BIZ_TYPE_CD -->
 				<if test="bizTypeCd != null and !bizTypeCd.equals('')">
 				and		code2.cd = #{bizTypeCd}
 				</if>
+				<!-- 음식점명 -->
+				<!-- 텍스트박스, LIKE% 검색 -->
 				<if test="restNm != null and !restNm.equals('')">
 				and		restmst.rest_nm like concat('%',#{restNm},'%')
 				</if>
+				<!-- 업주 -->
+				<!-- 사용자조회 팝업 -->
 				<if test="coName != null and !coName.equals('')">
 				and		user.u_name like concat('%',#{coName},'%')
 				</if>
+				<!-- 예약가능기간 -->
+				<!-- Datepicker, 필수, 기본값 : 현재일 기준 -6개월 ~ +6개월 -->
 				<if test="rsvStrtDay != null">
 				and		restmst.rsv_strt_day &gt;= ${rsvStrtDay} 
 				</if>
 				<if test="rsvEndDay != null">
 				and		restmst.rsv_end_day &lt;= ${rsvEndDay}
 				</if>
+				<!-- 결재상태 -->
+				<!-- 콤보박스, 공통코드 : 업무영역코드 – CM, 그룹코드 – APPR_STAT -->
 				<if test="apprStatCd != null and !apprStatCd.equals('')">
 				and		code3.cd = #{apprStatCd}
 				</if>
