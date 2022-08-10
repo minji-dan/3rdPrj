@@ -24,53 +24,57 @@ import com.fasterxml.jackson.core.JsonGenerationException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import antlr.StringUtils;
 import kr.co.biztechpartners.serveSocket.admin.service.AdminService;
 import kr.co.biztechpartners.serveSocket.admin.vo.CommonCodeExt;
 import kr.co.biztechpartners.serveSocket.common.util.QueryUtil;
 import kr.co.biztechpartners.serveSocket.ed.service.EdService;
+import kr.co.biztechpartners.serveSocket.ed.vo.AvaInfoDtoExt;
+import kr.co.biztechpartners.serveSocket.ed.vo.RestHolyMstDtoExt;
 import kr.co.biztechpartners.serveSocket.ed.vo.RestMstDtoExt;
+import kr.co.biztechpartners.serveSocket.ed.vo.RezMstDtoExt;
 import kr.co.biztechpartners.serveSocket.user.vo.UserVOExt;
 
 @Controller
 public class EdController {
 	private static final Logger log = LoggerFactory.getLogger(EdController.class);
-	
+
 	@Autowired
 	EdService edService;
-	
+
 	@GetMapping("/ed/csrList")
-	public ModelAndView csrList(HttpSession session){
+	public ModelAndView csrList(HttpSession session) {
 		ModelAndView view = new ModelAndView();
-		
+
 		view.setViewName("ed/csrList");
 		return view;
 	}
-	
+
 	@GetMapping("/ed/ed1List")
-	public ModelAndView ed1List(HttpSession session){
+	public ModelAndView ed1List(HttpSession session) {
 		ModelAndView view = new ModelAndView();
-		
+
 		view.setViewName("ed/ed1List");
 		return view;
 	}
-	
+
 	@GetMapping("/ed/ed2List")
-	public ModelAndView ed2List(HttpSession session){
+	public ModelAndView ed2List(HttpSession session) {
 		ModelAndView view = new ModelAndView();
-		
+
 		view.setViewName("ed/ed2List");
 		return view;
 	}
-	
+
 	@GetMapping("/ed/ed3List")
-	public ModelAndView ed3List(HttpSession session){
+	public ModelAndView ed3List(HttpSession session) {
 		ModelAndView view = new ModelAndView();
-		
+
 		view.setViewName("ed/ed3List");
 		return view;
 	}
 	
-	//20220808 김민지 
+	/* 0808 mji */
 	@GetMapping("/ed/ed5List")
 	public ModelAndView ed5List(HttpSession session){
 		ModelAndView view = new ModelAndView();
@@ -78,7 +82,7 @@ public class EdController {
 		view.setViewName("ed/ed5List");
 		return view;
 	}
-	
+
 //	@GetMapping("/ed/PRRE001List")
 //	public ModelAndView PRRE001List(HttpSession session){
 //		ModelAndView view = new ModelAndView();
@@ -118,168 +122,261 @@ public class EdController {
 //		view.setViewName("ed/PRRE005List");
 //		return view;
 //	}
-	
-	//공통코드 관리
+
+	// 공통코드 관리
 	@GetMapping("/ed/PRRE001")
-	public ModelAndView PRRE001(HttpSession session){
+	public ModelAndView PRRE001(HttpSession session) {
 		ModelAndView view = new ModelAndView();
-		
+		int records = edService.selectAlltotalRecords();
+		view.addObject("records", records);
 		view.setViewName("ed/PRRE001");
 		return view;
 	}
-	
-	@RequestMapping(value="/ed/restlist", method = RequestMethod.POST)
-    public @ResponseBody Object restList(HttpServletRequest request,
-            HttpServletResponse response,
-            @RequestParam boolean _search,
-            @RequestParam long nd, 
-            @RequestParam int rows,
-            @RequestParam int page, 
-            @RequestParam String sidx,
-            @RequestParam String sord,
-            @RequestParam(required = false)  String filters
-            ) throws JsonGenerationException,JsonMappingException, IOException{
-    	HashMap<String, Object> params = new HashMap<String, Object>();
-    	
-    	System.out.println(page);
-    	System.out.println(rows);
+
+	@RequestMapping(value = "/ed/restlist", method = RequestMethod.POST)
+	public @ResponseBody Object restList(HttpServletRequest request, HttpServletResponse response,
+			@RequestParam boolean _search, @RequestParam long nd, @RequestParam int rows, @RequestParam int page,
+			@RequestParam String sidx, @RequestParam String sord, @RequestParam(required = false) String filters)
+			throws JsonGenerationException, JsonMappingException, IOException {
+		HashMap<String, Object> params = new HashMap<String, Object>();
+
+		System.out.println(page);
+		System.out.println(rows);
 //    	int start = ((page - 1) * rows) + 1;
 //        int limit = (start + rows) - 1;
-    	int start = ((page)-1) * rows + 1;
-    	int limit = page * rows;
-        if(filters != null && !filters.equals("")) {
-            //System.out.println(filters);
-              params.put("filters", QueryUtil.getQueryCondition(filters));
-        }
-        
+		int start = ((page) - 1) * rows + 1;
+		int limit = page * rows;
+//        if(filters != null && !filters.equals("")) {
+//            //System.out.println(filters);
+//              params.put("filters", QueryUtil.getQueryCondition(filters));
+//        }
 
+		params.put("start", start);
+		params.put("limit", limit);
 
-        params.put("start", start);
-        params.put("limit", limit);
+		List<RestMstDtoExt> searchRest = edService.getAllRest(params);
 
-        List<RestMstDtoExt> searchRest = edService.getAllRest(params);
-        
-        //System.out.println(searchRest.get(0));
-        ObjectMapper mapper = new ObjectMapper();
-        Map<String, Object> modelMap = new HashMap<String, Object>();
-        int totcnt = 0;
-        if( !searchRest.isEmpty() ) {
-        	totcnt = searchRest.get(0).getTotcnt();
-        }
-        
-        
-        int records = edService.selectAlltotalRecords();
-        double total = (double) records / rows;
+		// System.out.println(searchRest.get(0));
+		ObjectMapper mapper = new ObjectMapper();
+		Map<String, Object> modelMap = new HashMap<String, Object>();
+		int totcnt = 0;
+		if (!searchRest.isEmpty()) {
+			totcnt = searchRest.get(0).getTotcnt();
+		}
+
+		int records = edService.selectAlltotalRecords();
+		double total = (double) records / rows;
 //        for(int i=0; i<searchRest.size(); i++) {
-//     	   System.out.println(searchRest.get(i).getRsvStrtDay());
+//     	   System.out.println(searchRest.get(i).getRestId());
 //     	}
-        
-        
-        modelMap.put("total", (int) Math.ceil(total));
-        modelMap.put("records", records);
-        modelMap.put("rows", searchRest);
-        modelMap.put("page", page);
-        
-        String value = mapper.writeValueAsString(modelMap);
-    	
-    	return value;
-    }
-	
-	
-	
-	//grid search 0806 gw
-	@RequestMapping(value="/ed/restSearch", method = RequestMethod.POST)
-    public @ResponseBody Object restSearch(HttpServletRequest request,HttpServletResponse response,
-            @RequestParam int rows,
-            @RequestParam int page) throws JsonGenerationException,JsonMappingException, IOException{
-		
-		HashMap<String, Object> params = new HashMap<String, Object>();
-    	
-    	int start = ((page - 1) * rows) + 1;
-        int limit = (start + rows) - 1;
-        
 
-        String bizrgNo = request.getParameter("bizrgNo");
-        String loc = request.getParameter("loc");
-        String bizTypeCd = request.getParameter("bizTypeCd");
-        String restNm = request.getParameter("restNm");
-        String coName = request.getParameter("coName");
-        String rsvStrtDay = request.getParameter("rsvStrtDay");
-        String rsvEndDay = request.getParameter("rsvEndDay");
-        String apprStatCd = request.getParameter("apprStatCd");
-       
-        if(loc.equals("L0000")) {
-        	//System.out.println(loc);
-        	loc = null;
-        	//System.out.println(loc);
-        }
-        
-        if(bizTypeCd.equals("B0000")) {
-        	bizTypeCd = null;
-        }
-        
-        if(apprStatCd.equals("X")) {
-        	apprStatCd = null;
-        }
-        rsvStrtDay = rsvStrtDay.replaceAll("[^\\uAC00-\\uD7A30-9a-zA-Z]", "");
-        rsvEndDay = rsvEndDay.replaceAll("[^\\uAC00-\\uD7A30-9a-zA-Z]", "");
-        System.out.println(bizrgNo);
-//        params.put("start", start);
-//        params.put("limit", limit);
-        params.put("bizrgNo", bizrgNo);
-        params.put("loc", loc);
-        params.put("bizTypeCd", bizTypeCd);
-        params.put("restNm", restNm);
-        params.put("coName", coName);
-        params.put("rsvStrtDay", rsvStrtDay);
-        params.put("rsvEndDay", rsvEndDay);
-        params.put("apprStatCd", apprStatCd);
-        
-        List<RestMstDtoExt> searchRest = edService.searchRest(params);
-        
-        //System.out.println(searchRest.get(0));
-        ObjectMapper mapper = new ObjectMapper();
-        Map<String, Object> modelMap = new HashMap<String, Object>();
-        int totcnt = 0;
-        if( !searchRest.isEmpty() ) {
-        	totcnt = searchRest.get(0).getTotcnt();
-        }
-        
-        double total = (double) totcnt / rows;
+		modelMap.put("total", (int) Math.ceil(total));
+		modelMap.put("records", records);
+		modelMap.put("rows", searchRest);
+		modelMap.put("page", page);
 
-        modelMap.put("total", (int) Math.ceil(total));
-        modelMap.put("records", totcnt);
-        modelMap.put("rows", searchRest);
-        modelMap.put("page", page);
-		
-        String value = mapper.writeValueAsString(modelMap);
+		String value = mapper.writeValueAsString(modelMap);
+
 		return value;
 	}
-	
-	//excel down 0805 gw 
-		@RequestMapping(value = "/ed/down_excel", method=RequestMethod.POST)
-		public ModelAndView down_excel(HttpSession session){
-			ModelAndView view = new ModelAndView();
-			
-			view.setViewName("ed/down_excel");
-			return view;
+
+	// grid search 0806 gw
+	@RequestMapping(value = "/ed/restSearch", method = RequestMethod.POST)
+	public @ResponseBody Object restSearch(HttpServletRequest request, HttpServletResponse response,
+			@RequestParam int rows, @RequestParam int page)
+			throws JsonGenerationException, JsonMappingException, IOException {
+
+		HashMap<String, Object> params = new HashMap<String, Object>();
+
+		int start = ((page) - 1) * rows + 1;
+		int limit = page * rows;
+
+		String bizrgNo = request.getParameter("bizrgNo");
+		String loc = request.getParameter("loc");
+		String bizTypeCd = request.getParameter("bizTypeCd");
+		String restNm = request.getParameter("restNm");
+		String coName = request.getParameter("coName");
+		String rsvStrtDay = request.getParameter("rsvStrtDay");
+		String rsvEndDay = request.getParameter("rsvEndDay");
+		String apprStatCd = request.getParameter("apprStatCd");
+
+		if (loc.equals("L0000")) {
+			// System.out.println(loc);
+			loc = null;
+			// System.out.println(loc);
 		}
-	
-	@GetMapping("/ed/PRRE002")
-	public ModelAndView PRRE002(HttpSession session){
+
+		if (bizTypeCd.equals("B0000")) {
+			bizTypeCd = null;
+		}
+
+		if (apprStatCd.equals("X")) {
+			apprStatCd = null;
+		}
+		rsvStrtDay = rsvStrtDay.replaceAll("[^\\uAC00-\\uD7A30-9a-zA-Z]", "");
+		rsvEndDay = rsvEndDay.replaceAll("[^\\uAC00-\\uD7A30-9a-zA-Z]", "");
+		System.out.println(bizrgNo);
+		params.put("start", start);
+		params.put("limit", limit);
+		params.put("bizrgNo", bizrgNo);
+		params.put("loc", loc);
+		params.put("bizTypeCd", bizTypeCd);
+		params.put("restNm", restNm);
+		params.put("coName", coName);
+		params.put("rsvStrtDay", rsvStrtDay);
+		params.put("rsvEndDay", rsvEndDay);
+		params.put("apprStatCd", apprStatCd);
+
+		List<RestMstDtoExt> searchRest = edService.searchRest(params);
+		// System.out.println(searchRest.get(0));
+		ObjectMapper mapper = new ObjectMapper();
+		Map<String, Object> modelMap = new HashMap<String, Object>();
+		int totcnt = 0;
+		if (!searchRest.isEmpty()) {
+			totcnt = searchRest.get(0).getTotcnt();
+		}
+		int records = edService.selectSearchtotalRecords(params);
+		double total = (double) totcnt / rows;
+
+		modelMap.put("total", (int) Math.ceil(total));
+		modelMap.put("records", records);
+		modelMap.put("rows", searchRest);
+		modelMap.put("page", page);
+
+		String value = mapper.writeValueAsString(modelMap);
+		return value;
+	}
+
+	// excel down 0805 gw
+	@RequestMapping(value = "/ed/down_excel", method = RequestMethod.POST)
+	public ModelAndView down_excel(HttpSession session) {
 		ModelAndView view = new ModelAndView();
-		
-		view.setViewName("ed/PRRE002");
+
+		view.setViewName("ed/down_excel");
 		return view;
 	}
-	
-	@GetMapping("/ed/PRRE003")
-	public ModelAndView PRRE003(HttpSession session){
+
+//	@GetMapping("/ed/PRRE002")
+//	public ModelAndView PRRE002(HttpSession session){
+//		ModelAndView view = new ModelAndView();
+//		
+//		view.setViewName("ed/PRRE002");
+//		return view;
+//	}
+
+	@RequestMapping("/ed/PRRE002")
+	public ModelAndView PRRE002(HttpSession session, HttpServletRequest request, HttpServletResponse response,
+			@RequestParam(required = false) String restId) {
 		ModelAndView view = new ModelAndView();
+		HashMap<String, Object> params = new HashMap<String, Object>();
+		// String restNm = request.getParameter("restNm");
+		if (restId == null) {
+			int maxRestId = edService.autoRestId();
+			view.setViewName("ed/PRRE002");
+			view.addObject("maxRestId",maxRestId);
+			return view;
+		}
+
+		params.put("restId", restId);
+		List<RestMstDtoExt> restInfo = edService.restInfo(params);
+//		System.out.println(restNm);
+//		System.out.println(restNm);
+//		for(int i=0; i<restInfo.size(); i++) {
+//	     	   System.out.println(restInfo.get(i).getRestId());
+//	     }
+		view.setViewName("ed/PRRE002");
+		view.addObject("restInfo", restInfo);
+		return view;
+	}
+
+	@RequestMapping(value = "/ed/avaInfo", method = RequestMethod.POST)
+	public @ResponseBody Object avaInfo(HttpServletRequest request, HttpServletResponse response,
+			@RequestParam int rows, @RequestParam int page)
+			throws JsonGenerationException, JsonMappingException, IOException {
+
+		HashMap<String, Object> params = new HashMap<String, Object>();
+
+		int start = ((page) - 1) * rows + 1;
+		int limit = page * rows;
+
+		String restNm = request.getParameter("restNm");
+		System.out.println(restNm);
+		System.out.println(restNm);
+		params.put("start", start);
+		params.put("limit", limit);
+		params.put("restNm", restNm);
+
+		List<AvaInfoDtoExt> avaInfo = edService.avaInfo(params);
+		ObjectMapper mapper = new ObjectMapper();
+		Map<String, Object> modelMap = new HashMap<String, Object>();
+		int totcnt = 0;
+
+		if (!avaInfo.isEmpty()) {
+			totcnt = avaInfo.get(0).getTotcnt();
+		}
+
+		int records = edService.avaInfototalRecords(params);
+		double total = (double) totcnt / rows;
+
+		modelMap.put("total", (int) Math.ceil(total));
+		modelMap.put("records", records);
+		modelMap.put("rows", avaInfo);
+		modelMap.put("page", page);
+
+		String value = mapper.writeValueAsString(modelMap);
+		return value;
+	}
+
+	
+	//0809 전근우 
+	//2. 오른쪽 grid 휴무정보 
+	  
+	@RequestMapping(value = "/ed/holydt", method = RequestMethod.POST)
+	public @ResponseBody Object holydt(HttpServletRequest request, HttpServletResponse response,
+			@RequestParam int rows, @RequestParam int page)
+			throws JsonGenerationException, JsonMappingException, IOException {
+
+		HashMap<String, Object> params = new HashMap<String, Object>();
+
+		int start = ((page) - 1) * rows + 1;
+		int limit = page * rows;
+
+		String restNm = request.getParameter("restNm");
 		
+		params.put("start", start);
+		params.put("limit", limit);
+		params.put("restNm", restNm);
+
+		List<RestHolyMstDtoExt> holydt = edService.holydt(params);
+		ObjectMapper mapper = new ObjectMapper();
+		Map<String, Object> modelMap = new HashMap<String, Object>();
+		int totcnt = 0;
+
+		if (!holydt.isEmpty()) {
+			totcnt = holydt.get(0).getTotcnt();
+		}
+
+		int records = edService.holydtTotalRecords(params);
+		double total = (double) totcnt / rows;
+
+		modelMap.put("total", (int) Math.ceil(total));
+		modelMap.put("records", records);
+		modelMap.put("rows", holydt);
+		modelMap.put("page", page);
+
+		String value = mapper.writeValueAsString(modelMap);
+		return value;
+	}
+
+
+	@GetMapping("/ed/PRRE003")
+	public ModelAndView PRRE003(HttpSession session) {
+		ModelAndView view = new ModelAndView();
+
 		view.setViewName("ed/PRRE003");
 		return view;
 	}
+
 //	
 //	@RequestMapping(value="/ed/PRRE003List", method = RequestMethod.POST)
 //	public @ResponseBody Object PRRE003List(HttpServletRequest request,
@@ -334,91 +431,169 @@ public class EdController {
 //
 //        return value;
 //    }
-	@RequestMapping(value="/ed/avaInfoSearch", method = RequestMethod.POST)
-    public @ResponseBody Object avaInfoSearch(HttpServletRequest request,HttpServletResponse response,
-            @RequestParam int rows,
-            @RequestParam int page) throws JsonGenerationException,JsonMappingException, IOException{
-		
-		HashMap<String, Object> params = new HashMap<String, Object>();
-    	
-    	int start = ((page - 1) * rows) + 1;
-        int limit = (start + rows) - 1;
+	@RequestMapping(value = "/ed/avaInfoSearch", method = RequestMethod.POST)
+	public @ResponseBody Object avaInfoSearch(HttpServletRequest request, HttpServletResponse response,
+			@RequestParam int rows, @RequestParam int page)
+			throws JsonGenerationException, JsonMappingException, IOException {
 
-        String loc = request.getParameter("loc");
-        String bizTypeCd = request.getParameter("bizTypeCd");
-        String restNm = request.getParameter("restNm");
-        String rezDt = request.getParameter("rezDt");
-        String rezTimeCD = request.getParameter("rezTimeCD");
-        String rezPosCNT = request.getParameter("rezPosCNT");
-        String rezPay = request.getParameter("rezPay");
-        rezDt = rezDt.replaceAll("[^\\uAC00-\\uD7A30-9a-zA-Z]", "");
-        if(loc.equals("L0000")) {
-        	//System.out.println(loc);
-        	loc = null;
-        	//System.out.println(loc);
-        }
-        
-        if(bizTypeCd.equals("B0000")) {
-        	bizTypeCd = null;
-        }
-        
-        if(rezTimeCD.equals("R0000")) {
-        	rezTimeCD = null;
-        }
-        
-        if(rezPay.equals("F")) {
-        	rezPay = null;
-        }
+		HashMap<String, Object> params = new HashMap<String, Object>();
+
+		int start = ((page) - 1) * rows + 1;
+		int limit = page * rows;
+
+		String loc = request.getParameter("loc");
+		String bizTypeCd = request.getParameter("bizTypeCd");
+		String restNm = request.getParameter("restNm");
+		String rezDt = request.getParameter("rezDt");
+		String rezTimeCD = request.getParameter("rezTimeCD");
+		String rezPosCNT = request.getParameter("rezPosCNT");
+		String rezPay = request.getParameter("rezPay");
+		rezDt = rezDt.replaceAll("[^\\uAC00-\\uD7A30-9a-zA-Z]", "");
+		if (loc.equals("L0000")) {
+			// System.out.println(loc);
+			loc = null;
+			// System.out.println(loc);
+		}
+
+		if (bizTypeCd.equals("B0000")) {
+			bizTypeCd = null;
+		}
+
+		if (rezTimeCD.equals("R0000")) {
+			rezTimeCD = null;
+		}
+
+		if (rezPay.equals("F")) {
+			rezPay = null;
+		}
 		
-		 
-		 
-  
-//        params.put("start", start);
-//        params.put("limit", limit);
-        params.put("loc", loc);
-        params.put("bizTypeCd", bizTypeCd);
-        params.put("restNm", restNm);
-        params.put("rezDt", rezDt);
-        params.put("rezTimeCD", rezTimeCD);
-        params.put("rezPosCNT", rezPosCNT);
-        params.put("rezPay", rezPay);
-        
-        List<RestMstDtoExt> searchAvaInfo = edService.searchAvaInfo(params);
+		params.put("start", start);
+		params.put("limit", limit);
+		params.put("loc", loc);
+		params.put("bizTypeCd", bizTypeCd);
+		params.put("restNm", restNm);
+		params.put("rezDt", rezDt);
+		params.put("rezTimeCD", rezTimeCD);
+		params.put("rezPosCNT", rezPosCNT);
+		params.put("rezPay", rezPay);
+		
+		int records = edService.avaInfoSearchRecords(params);
+		List<RestMstDtoExt> searchAvaInfo = edService.searchAvaInfo(params);
 //        for(int i=0; i<searchAvaInfo.size(); i++) {
 //   		 System.out.println(searchAvaInfo.get(i).getatt); 
 //   		 }
-        //System.out.println(searchRest.get(0));
-        ObjectMapper mapper = new ObjectMapper();
-        Map<String, Object> modelMap = new HashMap<String, Object>();
-        int totcnt = 0;
-        if( !searchAvaInfo.isEmpty() ) {
-        	totcnt = searchAvaInfo.get(0).getTotcnt();
-        }
-        
-        double total = (double) totcnt / rows;
+		// System.out.println(searchRest.get(0));
+		ObjectMapper mapper = new ObjectMapper();
+		Map<String, Object> modelMap = new HashMap<String, Object>();
+		int totcnt = 0;
+		if (!searchAvaInfo.isEmpty()) {
+			totcnt = searchAvaInfo.get(0).getTotcnt();
+		}
 
-        modelMap.put("total", (int) Math.ceil(total));
-        modelMap.put("records", totcnt);
-        modelMap.put("rows", searchAvaInfo);
-        modelMap.put("page", page);
-		
-        String value = mapper.writeValueAsString(modelMap);
+		double total = (double) totcnt / rows;
+
+		modelMap.put("total", (int) Math.ceil(total));
+		modelMap.put("records", records);
+		modelMap.put("rows", searchAvaInfo);
+		modelMap.put("page", page);
+
+		String value = mapper.writeValueAsString(modelMap);
 		return value;
 	}
-	
-	@GetMapping("/ed/PRRE004")
-	public ModelAndView PRRE004(HttpSession session){
+
+	@RequestMapping("/ed/PRRE004")
+	public ModelAndView PRRE004(HttpSession session, HttpServletRequest request, HttpServletResponse response,
+			@RequestParam(required = false) String restNm) {
 		ModelAndView view = new ModelAndView();
-		
+		HashMap<String, Object> params = new HashMap<String, Object>();
+		// String restNm = request.getParameter("restNm");
+		if (restNm == null) {
+			view.setViewName("ed/PRRE004");
+			return view;
+		}
+
+		params.put("restNm", restNm);
+		List<RestMstDtoExt> restInfo = edService.restInfo(params);
+//		System.out.println(restNm);
+//		System.out.println(restNm);
+//		for(int i=0; i<restInfo.size(); i++) {
+//	     	   System.out.println(restInfo.get(i).getRestId());
+//	     }
 		view.setViewName("ed/PRRE004");
+		view.addObject("restInfo", restInfo);
 		return view;
 	}
-	
-	@GetMapping("/ed/PRRE005")
-	public ModelAndView PRRE005(HttpSession session){
-		ModelAndView view = new ModelAndView();
+
+		/*	 예약신청내역 전체
+ 		0808 mji 수정		*/
+		@GetMapping("/ed/PRRE005")
+		public ModelAndView PRRE005(HttpSession session){
+			ModelAndView view = new ModelAndView();
+			
+			view.setViewName("ed/PRRE005");
+			return view;
+		}
 		
-		view.setViewName("ed/PRRE005");
-		return view;
+		//grid에서 함수호출 
+		@RequestMapping(value="/ed/rezlist", method = RequestMethod.POST)
+		public @ResponseBody Object rezList(HttpServletRequest request,
+		        HttpServletResponse response,
+		        //grid에서 보낸 값 
+		        @RequestParam boolean _search,
+		        @RequestParam long nd, 
+		        @RequestParam int rows,
+		        @RequestParam int page, 
+		        // @RequestParam String sidx,
+		        // @RequestParam String sord,
+		        @RequestParam(required = false)  String filters
+		        ) throws JsonGenerationException,JsonMappingException, IOException{
+			HashMap<String, Object> params = new HashMap<String, Object>();
+			
+			System.out.println(page);
+			System.out.println(rows);
+		//    	int start = ((page - 1) * rows) + 1;
+		//        int limit = (start + rows) - 1;
+			
+			//페이징 처리
+			int start = ((page)-1) * rows + 1;
+			int limit = page * rows;
+		    if(filters != null && !filters.equals("")) {
+		        //System.out.println(filters);
+		          params.put("filters", QueryUtil.getQueryCondition(filters));
+		    }
+		    
+		
+		    //페이징 처리 
+		    params.put("start", start);
+		    params.put("limit", limit);
+		
+		    //sql로 값을 가져옴 
+		    List<RezMstDtoExt> searchRez = edService.getAllRez(params);
+		    
+		    //System.out.println(searchRest.get(0));
+		    ObjectMapper mapper = new ObjectMapper();
+		    Map<String, Object> modelMap = new HashMap<String, Object>();
+		    
+		    int totcnt = 0;
+		    if( !searchRez.isEmpty() ) {
+		    	totcnt = searchRez.get(0).getTotcnt();
+		    }
+		    
+		    //페이징처리 
+		    int records = edService.selectAlltotalRecords5();
+		    double total = (double) records / rows;
+		//        for(int i=0; i<searchRest.size(); i++) {
+		//     	   System.out.println(searchRest.get(i).getRsvStrtDay());
+		//     	}
+		    
+		    
+		    modelMap.put("total", (int) Math.ceil(total));
+		    modelMap.put("records", records);
+		    modelMap.put("rows", searchRez);
+		    modelMap.put("page", page);
+		    
+		    String value = mapper.writeValueAsString(modelMap);
+			
+			return value;
+		}
 	}
-}
